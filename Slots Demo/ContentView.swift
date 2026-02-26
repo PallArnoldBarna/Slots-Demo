@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var credits = 1000
-    @State private var symbols = ["apple", "star", "cherry"]
+    @State private var credits = 5
+    @State private var symbols = [Symbols.apple.rawValue, Symbols.star.rawValue, Symbols.cherry.rawValue]
     @State private var numbers = [
         [1, 2, 0],
         [1, 2, 0],
@@ -21,8 +21,12 @@ struct ContentView: View {
         [.white, .white, .white]
     ]
     private var betAmount = 5
+    @State private var isOneRowButtonDisabled = false
     @State private var isButtonDisabled = false
     @State private var win = false
+    @State private var timer: Timer?
+    @State private var autoSpinOneRow = false
+    @State private var autoSpin = false
     
     func checkMatch(
         indexRow1: Int, indexColumn1: Int,
@@ -46,7 +50,26 @@ struct ContentView: View {
         }
     }
     
-    func spinningProcess(onlyForMiddleRow: Bool = false) {
+    func spinningProcess(onlyForMiddleRow: Bool) {
+        
+        if onlyForMiddleRow {
+            guard self.credits >= self.betAmount else {
+                isOneRowButtonDisabled = true
+                autoSpinOneRow = false
+                invalidateTimer()
+                
+                return
+            }
+        } else {
+            guard self.credits >= (self.betAmount * 5) else {
+                isButtonDisabled = true
+                autoSpin = false
+                invalidateTimer()
+                
+                return
+            }
+        }
+        
         self.backgrounds = self.backgrounds.map { row in
             row.map { _ in
                 Color.white
@@ -71,10 +94,18 @@ struct ContentView: View {
             )
             
             if self.credits < self.betAmount {
-                isButtonDisabled = true
+                isOneRowButtonDisabled = true
+                autoSpinOneRow = false
+                
+                invalidateTimer()
             } else {
                 self.credits -= self.betAmount
-                isButtonDisabled = self.credits < self.betAmount
+                isOneRowButtonDisabled = self.credits < self.betAmount
+                
+                if isOneRowButtonDisabled {
+                    autoSpinOneRow = false
+                    invalidateTimer()
+                }
             }
             
         } else {
@@ -116,50 +147,65 @@ struct ContentView: View {
             
             if self.credits < (self.betAmount * 5) {
                 isButtonDisabled = true
+                autoSpin = false
+                
+                invalidateTimer()
             } else {
                 self.credits -= self.betAmount * 5
                 isButtonDisabled = self.credits < (self.betAmount * 5)
+                
+                if isButtonDisabled {
+                    autoSpin = false
+                    invalidateTimer()
+                }
             }
         }
+    }
+    
+    func autoSpinning(isOn: Bool, onlyForMiddleRow : Bool) {
+        if isOn {
+            timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
+                spinningProcess(onlyForMiddleRow: onlyForMiddleRow)
+            }
+        } else {
+            invalidateTimer()
+        }
+    }
+    
+    func invalidateTimer() {
+        timer?.invalidate()
+        timer = nil
     }
     
     var body: some View {
         ZStack {
             Rectangle()
-                .foregroundColor(Color(red: 200/255, green: 143/255, blue: 32/255))
-                .edgesIgnoringSafeArea(.all)
-            
+                .rectangleStyle(red: 200, green: 143, blue: 32)
+                
             Rectangle()
-                .foregroundColor(Color(red: 228/255, green: 195/255, blue: 76/255))
                 .rotationEffect(Angle(degrees: 45))
-                .edgesIgnoringSafeArea(.all)
+                .rectangleStyle(red: 228, green: 195, blue: 76)
+                
             
             VStack {
                 Spacer()
                 
                 HStack {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
+                    Image(systemName: Symbols.starSystem.rawValue)
+                        .starImageStyle()
                     
-                    Text("SwiftUI Slots")
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                    Text(Strings.titleText.rawValue)
+                        .titleTextModifier()
                     
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
+                    Image(systemName: Symbols.starSystem.rawValue)
+                        .starImageStyle()
                 }
                 .scaleEffect(2)
                 
                 Spacer()
                 
-                Text("Credits: \(String(credits))")
-                    .foregroundColor(.black)
-                    .padding(10)
-                    .background(win ? .green.opacity(0.5) : .white.opacity(0.5))
-                    .animation(.none, value: credits)
-                    .cornerRadius(20)
-                    .scaleEffect(win ? 1.2 : 1)
-                    .animation(.spring(response: 0.7, dampingFraction: 0.3), value: credits)
+                Text("\(Strings.creditsText.rawValue) \(String(credits))")
+                    .creditsTextStyle(win: win, credits: credits)
                 
                 Spacer()
                 
@@ -204,49 +250,178 @@ struct ContentView: View {
                 Spacer()
                 
                 HStack {
-                    Button(action: {
+                    VStack {
+                        Button(action: {
+                            
+                            withAnimation(.easeOut) {
+                                spinningProcess(onlyForMiddleRow: true)
+                            }
+                            
+                        }, label: {
+                            Text(Strings.spinOnlyMiddleRowButtonText.rawValue)
+                                .buttonTextStyle()
+                        }).disabled(isOneRowButtonDisabled)
                         
-                        withAnimation(.easeOut) {
-                            spinningProcess(onlyForMiddleRow: true)
-                        }
+                        Text("\(Strings.betText.rawValue) \(betAmount)")
                         
-                    }, label: {
-                        Text("Spin only for middle row")
-                            .fontWeight(.bold)
-                            .padding(10)
-                            .padding(.horizontal, 30)
-                            .foregroundColor(.white)
-                            .background(.pink)
-                            .cornerRadius(20)
-                    }).disabled(isButtonDisabled)
+                        Toggle(Strings.autoSpinText.rawValue, isOn: $autoSpinOneRow)
+                            .autoplayToggleStyle()
+                            .onChange(of: autoSpinOneRow) {
+                                autoSpinning(isOn: autoSpinOneRow, onlyForMiddleRow: true)
+                            }
+                            
+                    }
                     
-                    Text("Bet: \(betAmount)")
+                    VStack {
+                        Button(action: {
+                            
+                            withAnimation(.easeOut) {
+                                spinningProcess(onlyForMiddleRow: false)
+                            }
+                            
+                        }, label: {
+                            Text(Strings.spinButtonText.rawValue)
+                                .buttonTextStyle()
+                        }).disabled(isButtonDisabled)
                         
-                }
-                
-                HStack {
-                    Button(action: {
+                        Text("\(Strings.betText.rawValue) \(betAmount * 5)")
                         
-                        withAnimation(.easeOut) {
-                            spinningProcess()
-                        }
-                        
-                    }, label: {
-                        Text("Spin for everything")
-                            .fontWeight(.bold)
-                            .padding(10)
-                            .padding(.horizontal, 30)
-                            .foregroundColor(.white)
-                            .background(.pink)
-                            .cornerRadius(20)
-                    }).disabled(isButtonDisabled)
-                    
-                    Text("Bet: \(betAmount * 5)")
+                        Toggle(Strings.autoSpinText.rawValue, isOn: $autoSpin)
+                            .autoplayToggleStyle()
+                            .onChange(of: autoSpin) {
+                                autoSpinning(isOn: autoSpin, onlyForMiddleRow: false)
+                            }
+                    }
                 }
                 
                 Spacer()
             }
         }
+    }
+}
+
+enum Strings: String {
+    case titleText = "SwiftUI Slots"
+    case creditsText = "Credits"
+    case spinOnlyMiddleRowButtonText = "Spin only for middle row"
+    case spinButtonText = "Spin for everything"
+    case betText = "Ber"
+    case autoSpinText = "Auto-spin"
+}
+
+enum Symbols: String {
+    case starSystem = "star.fill"
+    case star = "star"
+    case apple = "apple"
+    case cherry = "cherry"
+}
+
+struct ButtonTextModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .fontWeight(.bold)
+            .padding(10)
+            .padding(.horizontal, 30)
+            .foregroundColor(.white)
+            .background(.pink)
+            .cornerRadius(20)
+    }
+}
+
+struct StarImageModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .foregroundColor(.yellow)
+    }
+}
+
+struct CreditsTextModifier: ViewModifier {
+    var win: Bool
+    var credits: Int
+    
+    init(_ win: Bool, _ credits: Int) {
+        self.win = win
+        self.credits = credits
+    }
+    
+    func body(content: Content) -> some View {
+        content
+            .foregroundColor(.black)
+            .padding(10)
+            .background(win ? .green.opacity(0.5) : .white.opacity(0.5))
+            .animation(.none, value: credits)
+            .cornerRadius(20)
+            .scaleEffect(win ? 1.2 : 1)
+            .animation(.spring(response: 0.7, dampingFraction: 0.3), value: credits)
+    }
+}
+
+struct TitleTextModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+    }
+}
+
+struct RectangleModifier: ViewModifier {
+    var red: CGFloat
+    var green: CGFloat
+    var blue: CGFloat
+    
+    init(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+    }
+    
+    func body(content: Content) -> some View {
+        content
+            .foregroundColor(Color(red: red/255, green: green/255, blue: blue/255))
+            .edgesIgnoringSafeArea(.all)
+    }
+}
+
+struct AutoplayToggleModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .foregroundColor(.white)
+            .frame(width: 145)
+            .padding()
+            .background(.blue)
+            .cornerRadius(20)
+    }
+}
+
+extension Toggle {
+    func autoplayToggleStyle() -> some View {
+        modifier(AutoplayToggleModifier())
+    }
+}
+
+extension View {
+    func rectangleStyle(red: CGFloat, green: CGFloat, blue: CGFloat) -> some View {
+        modifier(RectangleModifier(red, green, blue))
+    }
+}
+
+extension Text {
+    func buttonTextStyle() -> some View {
+        modifier(ButtonTextModifier())
+    }
+    
+    func creditsTextStyle(win: Bool, credits: Int) -> some View {
+        modifier(CreditsTextModifier(win, credits))
+    }
+    
+    func titleTextModifier() -> some View {
+        modifier(TitleTextModifier())
+    }
+}
+
+extension Image {
+    func starImageStyle() -> some View {
+        modifier(StarImageModifier())
     }
 }
 
