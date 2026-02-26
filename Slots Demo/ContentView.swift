@@ -22,6 +22,7 @@ struct ContentView: View {
     ]
     private var betAmount = 5
     @State private var isButtonDisabled = false
+    @State private var win = false
     
     func checkMatch(
         indexRow1: Int, indexColumn1: Int,
@@ -40,6 +41,8 @@ struct ContentView: View {
             } else {
                 self.credits += self.betAmount * 25
             }
+            
+            self.win = true
         }
     }
     
@@ -55,6 +58,8 @@ struct ContentView: View {
                 Int.random(in: 0...symbols.count - 1)
             }
         }
+        
+        self.win = false
         
         if onlyForMiddleRow {
             
@@ -75,25 +80,25 @@ struct ContentView: View {
         } else {
             
             // Check first row
-//            checkMatch(
-//                indexRow1: 0, indexColumn1: 0,
-//                indexRow2: 0, indexColumn2: 1,
-//                indexRow3: 0, indexColumn3: 2
-//            )
-//            
-//            // Check second row
-//            checkMatch(
-//                indexRow1: 1, indexColumn1: 0,
-//                indexRow2: 1, indexColumn2: 1,
-//                indexRow3: 1, indexColumn3: 2
-//            )
-//            
-//            // Check third row
-//            checkMatch(
-//                indexRow1: 2, indexColumn1: 0,
-//                indexRow2: 2, indexColumn2: 1,
-//                indexRow3: 2, indexColumn3: 2
-//            )
+            checkMatch(
+                indexRow1: 0, indexColumn1: 0,
+                indexRow2: 0, indexColumn2: 1,
+                indexRow3: 0, indexColumn3: 2
+            )
+            
+            // Check second row
+            checkMatch(
+                indexRow1: 1, indexColumn1: 0,
+                indexRow2: 1, indexColumn2: 1,
+                indexRow3: 1, indexColumn3: 2
+            )
+            
+            // Check third row
+            checkMatch(
+                indexRow1: 2, indexColumn1: 0,
+                indexRow2: 2, indexColumn2: 1,
+                indexRow3: 2, indexColumn3: 2
+            )
             
             // Check main diagonal
             checkMatch(
@@ -150,8 +155,11 @@ struct ContentView: View {
                 Text("Credits: \(String(credits))")
                     .foregroundColor(.black)
                     .padding(10)
-                    .background(.white.opacity(0.5))
+                    .background(win ? .green.opacity(0.5) : .white.opacity(0.5))
+                    .animation(.none, value: credits)
                     .cornerRadius(20)
+                    .scaleEffect(win ? 1.2 : 1)
+                    .animation(.spring(response: 0.7, dampingFraction: 0.3), value: credits)
                 
                 Spacer()
                 
@@ -195,33 +203,46 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                Button(action: {
+                HStack {
+                    Button(action: {
+                        
+                        withAnimation(.easeOut) {
+                            spinningProcess(onlyForMiddleRow: true)
+                        }
+                        
+                    }, label: {
+                        Text("Spin only for middle row")
+                            .fontWeight(.bold)
+                            .padding(10)
+                            .padding(.horizontal, 30)
+                            .foregroundColor(.white)
+                            .background(.pink)
+                            .cornerRadius(20)
+                    }).disabled(isButtonDisabled)
                     
-                    spinningProcess(onlyForMiddleRow: true)
-                    
-                }, label: {
-                    Text("Spin only for middle row")
-                        .fontWeight(.bold)
-                        .padding(10)
-                        .padding(.horizontal, 30)
-                        .foregroundColor(.white)
-                        .background(.pink)
-                        .cornerRadius(20)
-                }).disabled(isButtonDisabled)
+                    Text("Bet: \(betAmount)")
+                        
+                }
                 
-                Button(action: {
+                HStack {
+                    Button(action: {
+                        
+                        withAnimation(.easeOut) {
+                            spinningProcess()
+                        }
+                        
+                    }, label: {
+                        Text("Spin for everything")
+                            .fontWeight(.bold)
+                            .padding(10)
+                            .padding(.horizontal, 30)
+                            .foregroundColor(.white)
+                            .background(.pink)
+                            .cornerRadius(20)
+                    }).disabled(isButtonDisabled)
                     
-                    spinningProcess()
-                    
-                }, label: {
-                    Text("Spin for everything")
-                        .fontWeight(.bold)
-                        .padding(10)
-                        .padding(.horizontal, 30)
-                        .foregroundColor(.white)
-                        .background(.pink)
-                        .cornerRadius(20)
-                }).disabled(isButtonDisabled)
+                    Text("Bet: \(betAmount * 5)")
+                }
                 
                 Spacer()
             }
