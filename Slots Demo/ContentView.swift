@@ -8,12 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var credits = 5
-    @State private var symbols = [Symbols.apple.rawValue, Symbols.star.rawValue, Symbols.cherry.rawValue]
+    @State private var credits = 1000
+    @State private var symbols = [
+        Symbols.apple.rawValue, Symbols.star.rawValue, Symbols.cherry.rawValue,
+        Symbols.seven.rawValue, Symbols.lemon.rawValue, Symbols.clover.rawValue
+    ]
     @State private var numbers = [
         [1, 2, 0],
-        [1, 2, 0],
-        [1, 2, 0]
+        [4, 3, 5],
+        [1, 4, 3]
     ]
     @State private var backgrounds: [[Color]] = [
         [.white, .white, .white],
@@ -301,7 +304,7 @@ struct ContentView: View {
 }
 
 enum Strings: String {
-    case titleText = "SwiftUI Slots"
+    case titleText = "Slots Game"
     case creditsText = "Credits"
     case spinOnlyMiddleRowButtonText = "Spin only for middle row"
     case spinButtonText = "Spin for everything"
@@ -314,6 +317,9 @@ enum Symbols: String {
     case star = "star"
     case apple = "apple"
     case cherry = "cherry"
+    case seven = "seven"
+    case clover = "clover"
+    case lemon = "lemon"
 }
 
 struct ButtonTextModifier: ViewModifier {
