@@ -23,7 +23,8 @@ struct ContentView: View {
         [.white, .white, .white],
         [.white, .white, .white]
     ]
-    private var betAmount = 5
+    @State private var betAmount = 5
+    private let betOptions = [5, 10, 25, 50]
     @State private var isOneRowButtonDisabled = false
     @State private var isButtonDisabled = false
     @State private var win = false
@@ -298,6 +299,25 @@ struct ContentView: View {
                 }
                 
                 Spacer()
+                
+                HStack {
+                    Text(Strings.betAmountText.rawValue)
+                    
+                    Spacer()
+                    
+                    Picker(Strings.betAmountText.rawValue, selection: $betAmount) {
+                        ForEach(betOptions, id: \.self) { amount in
+                            Text("\(amount)").tag(amount)
+                        }
+                    }
+                    .betAmountPickerStyle()
+                    .onChange(of: betAmount) {
+                        isOneRowButtonDisabled = credits < betAmount
+                        isButtonDisabled = credits < (betAmount * 5)
+                    }
+                    
+                }
+                .betAmountPickerModifier()
             }
         }
     }
@@ -308,7 +328,8 @@ enum Strings: String {
     case creditsText = "Credits"
     case spinOnlyMiddleRowButtonText = "Spin only for middle row"
     case spinButtonText = "Spin for everything"
-    case betText = "Ber"
+    case betText = "Bet"
+    case betAmountText = "Bet Amount"
     case autoSpinText = "Auto-spin"
 }
 
@@ -320,6 +341,26 @@ enum Symbols: String {
     case seven = "seven"
     case clover = "clover"
     case lemon = "lemon"
+}
+
+struct BetAmountPickerModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 150)
+            .foregroundColor(.white)
+            .padding(10)
+            .background(.orange)
+            .cornerRadius(20)
+    }
+}
+
+struct BetAmountPickerStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .pickerStyle(.menu)
+            .tint(.white)
+            .frame(height: 40)
+    }
 }
 
 struct ButtonTextModifier: ViewModifier {
@@ -396,6 +437,18 @@ struct AutoplayToggleModifier: ViewModifier {
             .padding()
             .background(.blue)
             .cornerRadius(20)
+    }
+}
+
+extension Picker {
+    func betAmountPickerStyle() -> some View {
+        modifier(BetAmountPickerStyle())
+    }
+}
+
+extension HStack {
+    func betAmountPickerModifier() -> some View {
+        modifier(BetAmountPickerModifier())
     }
 }
 
