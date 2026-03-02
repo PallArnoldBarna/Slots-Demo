@@ -25,6 +25,7 @@ struct ContentView: View {
     ]
     @State private var betAmount = 5
     private let betOptions = [5, 10, 25, 50]
+    @State private var betAmountIndex = 0
     @State private var isOneRowButtonDisabled = false
     @State private var isButtonDisabled = false
     @State private var win = false
@@ -301,23 +302,35 @@ struct ContentView: View {
                 Spacer()
                 
                 HStack {
-                    Text(Strings.betAmountText.rawValue)
                     
-                    Spacer()
-                    
-                    Picker(Strings.betAmountText.rawValue, selection: $betAmount) {
-                        ForEach(betOptions, id: \.self) { amount in
-                            Text("\(amount)").tag(amount)
+                    HStack {
+                        Text(Strings.betAmountText.rawValue)
+                        
+                        Spacer()
+                        
+                        Picker(Strings.betAmountText.rawValue, selection: $betAmount) {
+                            ForEach(betOptions, id: \.self) { amount in
+                                Text("\(amount)").tag(amount)
+                            }
                         }
+                        .betAmountPickerStyle()
+                        .onChange(of: betAmount) {
+                            betAmountIndex = betOptions.firstIndex(of: betAmount) ?? 0
+                            isOneRowButtonDisabled = credits < betAmount
+                            isButtonDisabled = credits < (betAmount * 5)
+                        }
+                        
                     }
-                    .betAmountPickerStyle()
-                    .onChange(of: betAmount) {
-                        isOneRowButtonDisabled = credits < betAmount
-                        isButtonDisabled = credits < (betAmount * 5)
-                    }
+                    .betAmountPickerModifier()
                     
+                    Stepper(value: $betAmountIndex, in: 0...betOptions.count - 1) {
+                        Text("\(Strings.betAmountText.rawValue)    \(betAmount)")
+                    }
+                    .betAmountStepperStyle()
+                    .onChange(of: betAmountIndex) {
+                        betAmount = betOptions[betAmountIndex]
+                    }
                 }
-                .betAmountPickerModifier()
             }
         }
     }
@@ -328,8 +341,8 @@ enum Strings: String {
     case creditsText = "Credits"
     case spinOnlyMiddleRowButtonText = "Spin only for middle row"
     case spinButtonText = "Spin for everything"
-    case betText = "Bet"
-    case betAmountText = "Bet Amount"
+    case betText = "Bet: "
+    case betAmountText = "Bet"
     case autoSpinText = "Auto-spin"
 }
 
@@ -343,10 +356,22 @@ enum Symbols: String {
     case lemon = "lemon"
 }
 
+struct BetAmountStepperModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 180)
+            .padding(.vertical, 13)
+            .padding(.horizontal, 10)
+            .background(.orange)
+            .foregroundColor(.white)
+            .cornerRadius(20)
+    }
+}
+
 struct BetAmountPickerModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .frame(width: 150)
+            .frame(width: 130)
             .foregroundColor(.white)
             .padding(10)
             .background(.orange)
@@ -437,6 +462,12 @@ struct AutoplayToggleModifier: ViewModifier {
             .padding()
             .background(.blue)
             .cornerRadius(20)
+    }
+}
+
+extension Stepper {
+    func betAmountStepperStyle() -> some View {
+        modifier(BetAmountStepperModifier())
     }
 }
 
